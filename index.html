@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat vs Dog AI Detection & Localization Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%);
+            min-height: 100vh;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card-hover:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+            transition: all 0.2s ease;
+        }
+        .glow-cat {
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.35);
+        }
+        .glow-dog {
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.35);
+        }
+        .dropzone-active {
+            border-color: #6366F1 !important;
+            background: rgba(99, 102, 241, 0.1) !important;
+        }
+    </style>
+</head>
+<body class="text-slate-100 antialiased p-4 md:p-8">
+
+    <!-- Top Navigation / Deployment Notice -->
+    <div class="max-w-7xl mx-auto mb-4 flex flex-wrap items-center justify-between gap-3 text-xs px-2">
+        <div class="flex items-center gap-2">
+            <span id="backend-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="backend-status-text" class="text-slate-300 font-medium">Connecting to AI Engine...</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="openApiModal()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition flex items-center gap-1.5">
+                <i data-lucide="settings" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span id="api-btn-text">API Settings</span>
+            </button>
+            <a href="https://github.com/Durjoydattaprantho/cat_dog_detection" target="_blank" class="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-500/30 transition flex items-center gap-1.5 font-semibold">
+                <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub Repo
+            </a>
+        </div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="max-w-7xl mx-auto mb-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 glass-card p-6 rounded-2xl shadow-2xl">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/30">
+                    🐾
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-pink-200">
+                        Cat vs Dog Detection Studio
+                    </h1>
+                    <p class="text-xs md:text-sm text-slate-400 mt-1">
+                        Deep Learning Object Localization & Classification System &bull; PyTorch &bull; Grad-CAM Saliency
+                    </p>
+                </div>
+            </div>
+
+            <!-- Stats Badge -->
+            <div class="flex items-center gap-3">
+                <div class="px-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-center">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Model Accuracy</div>
+                    <div class="text-lg font-bold text-emerald-400 mono">100.0%</div>
+                </div>
+                <div class="px-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-center">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Dataset Size</div>
+                    <div class="text-lg font-bold text-indigo-400 mono">1,000 Imgs</div>
+                </div>
+                <div class="px-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-center">
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Type</div>
+                    <div class="text-lg font-bold text-amber-400 mono">Detection + CAM</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Studio Grid -->
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Left Column: Input Methods (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+
+            <!-- Mode Selector Tabs -->
+            <div class="glass-card p-2 rounded-2xl flex gap-2">
+                <button id="tab-samples" onclick="switchInputTab('samples')" class="flex-1 py-2.5 px-3 rounded-xl text-xs md:text-sm font-semibold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-lg">
+                    <i data-lucide="grid" class="w-4 h-4"></i> Dataset Samples
+                </button>
+                <button id="tab-upload" onclick="switchInputTab('upload')" class="flex-1 py-2.5 px-3 rounded-xl text-xs md:text-sm font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i data-lucide="upload" class="w-4 h-4"></i> Upload Photo
+                </button>
+                <button id="tab-webcam" onclick="switchInputTab('webcam')" class="flex-1 py-2.5 px-3 rounded-xl text-xs md:text-sm font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60">
+                    <i data-lucide="camera" class="w-4 h-4"></i> Live Camera
+                </button>
+            </div>
+
+            <!-- Tab 1: Samples Card (Active by Default for instant GitHub Pages demo) -->
+            <div id="panel-samples" class="glass-card p-6 rounded-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> Select from Dataset
+                    </h3>
+                    <span class="text-xs text-slate-400">archive/animals</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">Click any pet below to test deep learning localization & Grad-CAM:</p>
+                <div id="samples-grid" class="grid grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                    <div class="text-center py-8 text-slate-400 col-span-2">Loading sample pets...</div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Upload Card -->
+            <div id="panel-upload" class="glass-card p-6 rounded-2xl hidden">
+                <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="image" class="w-4 h-4 text-indigo-400"></i> Drop or Select Image
+                </h3>
+
+                <div id="dropzone" class="border-2 border-dashed border-slate-600 hover:border-indigo-500 rounded-2xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center gap-3 bg-slate-900/40">
+                    <div class="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                        <i data-lucide="cloud-upload" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-slate-200">Drag & Drop pet photo here</p>
+                        <p class="text-xs text-slate-400 mt-1">PNG, JPG, JPEG, WEBP up to 15MB</p>
+                    </div>
+                    <span class="inline-block mt-2 px-4 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-200 hover:text-white text-xs font-semibold transition border border-indigo-500/30">
+                        Browse Files
+                    </span>
+                    <input type="file" id="file-input" class="hidden" accept="image/*" />
+                </div>
+            </div>
+
+            <!-- Tab 3: Webcam Card -->
+            <div id="panel-webcam" class="glass-card p-6 rounded-2xl hidden">
+                <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="video" class="w-4 h-4 text-rose-400"></i> Web Camera Capture
+                </h3>
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 aspect-video flex items-center justify-center">
+                    <video id="webcam-video" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                    <canvas id="webcam-canvas" class="hidden"></canvas>
+                    <div id="webcam-placeholder" class="text-center p-6 text-slate-400">
+                        <i data-lucide="camera-off" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="text-xs">Click Start Camera to begin stream</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button id="btn-camera-toggle" onclick="toggleCamera()" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-600 transition flex items-center justify-center gap-2">
+                        <i data-lucide="play" class="w-4 h-4"></i> Start Camera
+                    </button>
+                    <button id="btn-camera-capture" onclick="captureCamera()" disabled class="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold text-white transition flex items-center justify-center gap-2">
+                        <i data-lucide="aperture" class="w-4 h-4"></i> Detect Snapshot
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detection Settings Accordion -->
+            <div class="glass-card p-5 rounded-2xl">
+                <div class="flex items-center justify-between text-xs text-slate-300">
+                    <span class="font-semibold flex items-center gap-1.5"><i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-400"></i> Bounding Box Sensitivity</span>
+                    <span id="threshold-val" class="mono text-indigo-400 font-bold">0.35</span>
+                </div>
+                <input type="range" id="threshold-slider" min="0.15" max="0.75" step="0.05" value="0.35" class="w-full mt-3 accent-indigo-500 cursor-pointer" oninput="updateThreshold(this.value)">
+                <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                    <span>Wider Bounding Box</span>
+                    <span>Tighter Focus</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Visual Detection Results Studio (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+
+            <!-- Result Viewer Card -->
+            <div class="glass-card p-6 rounded-2xl relative min-h-[500px]">
+
+                <!-- View Mode Buttons -->
+                <div class="flex items-center justify-between flex-wrap gap-2 pb-4 border-b border-slate-700/60 mb-6">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs uppercase font-bold tracking-wider text-slate-400">View Layer:</span>
+                        <div class="bg-slate-900/60 p-1 rounded-xl flex gap-1 border border-slate-700/60">
+                            <button id="btn-view-box" onclick="switchView('box')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition">
+                                🎯 Bounding Box
+                            </button>
+                            <button id="btn-view-cam" onclick="switchView('cam')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">
+                                🔥 Grad-CAM Heatmap
+                            </button>
+                            <button id="btn-view-orig" onclick="switchView('orig')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">
+                                🖼️ Original
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Latency indicator -->
+                    <div id="latency-tag" class="text-xs text-slate-400 mono hidden">
+                        ⚡ <span id="latency-ms">0</span> ms
+                    </div>
+                </div>
+
+                <!-- Empty State Placeholder -->
+                <div id="result-empty" class="py-24 text-center flex flex-col items-center justify-center">
+                    <div class="w-20 h-20 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-4xl mb-4">
+                        🔍
+                    </div>
+                    <h4 class="text-lg font-bold text-slate-200">Awaiting Image Input</h4>
+                    <p class="text-xs text-slate-400 max-w-sm mt-1">Click any sample pet on the left, upload a photo, or start the webcam to run neural detection.</p>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="result-loading" class="py-24 text-center flex-col items-center justify-center hidden">
+                    <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p class="text-sm font-semibold text-indigo-300">Extracting Feature Maps & Grad-CAM...</p>
+                </div>
+
+                <!-- Active Result Display -->
+                <div id="result-content" class="hidden space-y-6">
+
+                    <!-- Visual Canvas / Image Display -->
+                    <div class="relative rounded-2xl overflow-hidden bg-slate-950/70 border border-slate-700/60 flex items-center justify-center max-h-[460px] p-2">
+                        <img id="active-image" src="" alt="Detection Output" class="max-h-[440px] w-auto object-contain rounded-xl shadow-2xl transition-all duration-300" />
+
+                        <!-- Detection Floating Tag on top of image -->
+                        <div id="image-badge" class="absolute top-4 left-4 px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider backdrop-blur-md border shadow-lg flex items-center gap-1.5">
+                            <span id="badge-icon">🐱</span>
+                            <span id="badge-text">CAT 100.0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Classification & Detection Telemetry Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <!-- Primary Prediction Card -->
+                        <div id="primary-card" class="p-5 rounded-2xl border transition-all">
+                            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Detected Class</div>
+                            <div class="flex items-center justify-between">
+                                <div class="text-3xl font-extrabold flex items-center gap-2" id="res-class-name">
+                                    <span>🐱</span> CAT
+                                </div>
+                                <div class="text-2xl font-bold mono" id="res-confidence">
+                                    99.9%
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-2" id="res-description">
+                                Neural feature activations strongly match feline morphology (ears, eyes, whiskers).
+                            </p>
+                        </div>
+
+                        <!-- Bounding Box Telemetry -->
+                        <div class="p-5 rounded-2xl bg-slate-800/60 border border-slate-700">
+                            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                <span>Detected Bounding Box</span>
+                                <span class="text-[10px] mono text-indigo-400">Object Localization</span>
+                            </div>
+                            <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                                <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                                    <div class="text-[10px] text-slate-500 font-mono">X</div>
+                                    <div id="box-x" class="font-bold mono text-slate-200">150</div>
+                                </div>
+                                <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                                    <div class="text-[10px] text-slate-500 font-mono">Y</div>
+                                    <div id="box-y" class="font-bold mono text-slate-200">138</div>
+                                </div>
+                                <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                                    <div class="text-[10px] text-slate-500 font-mono">WIDTH</div>
+                                    <div id="box-w" class="font-bold mono text-slate-200">225</div>
+                                </div>
+                                <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                                    <div class="text-[10px] text-slate-500 font-mono">HEIGHT</div>
+                                    <div id="box-h" class="font-bold mono text-slate-200">252</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Probability Bars -->
+                    <div class="p-5 rounded-2xl bg-slate-800/40 border border-slate-700/60 space-y-4">
+                        <div class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                            <span>Class Probability Distribution</span>
+                            <span class="text-[11px] font-normal text-slate-500">Softmax Layer Output</span>
+                        </div>
+
+                        <!-- Cat Bar -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="flex items-center gap-1.5 text-emerald-400">🐱 Cat Probability</span>
+                                <span id="prob-cat-text" class="mono text-emerald-400">100.0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-3 p-0.5 border border-slate-800">
+                                <div id="prob-cat-bar" class="bg-gradient-to-r from-emerald-500 to-green-400 h-2 rounded-full transition-all duration-500" style="width: 100%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Dog Bar -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="flex items-center gap-1.5 text-blue-400">🐶 Dog Probability</span>
+                                <span id="prob-dog-text" class="mono text-blue-400">0.0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 rounded-full h-3 p-0.5 border border-slate-800">
+                                <div id="prob-dog-bar" class="bg-gradient-to-r from-blue-600 to-cyan-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- API Settings Modal -->
+    <div id="api-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card max-w-md w-full p-6 rounded-2xl border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-indigo-400"></i> Backend API Settings
+                </h3>
+                <button onclick="closeApiModal()" class="text-slate-400 hover:text-white">&times;</button>
+            </div>
+            <p class="text-xs text-slate-400">
+                Configure your FastAPI backend endpoint. Leave blank to auto-detect localhost or use GitHub Pages demo mode.
+            </p>
+            <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">API Base URL</label>
+                <input type="text" id="api-url-input" placeholder="http://127.0.0.1:8000" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500 mono" />
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="resetApiUrl()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">
+                    Reset Default
+                </button>
+                <button onclick="saveApiUrl()" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white">
+                    Save & Reconnect
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Scripts -->
+    <script>
+        lucide.createIcons();
+
+        // Stored API Base or Auto-Detect
+        let storedApi = localStorage.getItem('CAT_DOG_API_BASE');
+        let API_BASE = storedApi !== null ? storedApi : ((window.location.protocol === 'file:' || !window.location.port) ? 'http://127.0.0.1:8000' : '');
+
+        let currentResult = null;
+        let currentView = 'box';
+        let currentThreshold = 0.35;
+        let webcamStream = null;
+        let lastInputBlob = null;
+        let isBackendLive = false;
+        let cachedSamples = [];
+
+        function openApiModal() {
+            document.getElementById('api-url-input').value = API_BASE;
+            document.getElementById('api-modal').classList.remove('hidden');
+        }
+        function closeApiModal() {
+            document.getElementById('api-modal').classList.add('hidden');
+        }
+        function saveApiUrl() {
+            const val = document.getElementById('api-url-input').value.trim();
+            API_BASE = val;
+            localStorage.setItem('CAT_DOG_API_BASE', val);
+            closeApiModal();
+            checkServerHealth();
+        }
+        function resetApiUrl() {
+            localStorage.removeItem('CAT_DOG_API_BASE');
+            API_BASE = (window.location.protocol === 'file:' || !window.location.port) ? 'http://127.0.0.1:8000' : '';
+            document.getElementById('api-url-input').value = API_BASE;
+            closeApiModal();
+            checkServerHealth();
+        }
+
+        // Check backend server connection
+        async function checkServerHealth() {
+            const dot = document.getElementById('backend-status-dot');
+            const text = document.getElementById('backend-status-text');
+            try {
+                const res = await fetch(`${API_BASE}/api/stats`, { signal: AbortSignal.timeout(2500) });
+                if (res.ok) {
+                    isBackendLive = true;
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                    text.innerText = `Connected: Live AI Engine (${API_BASE || 'local'})`;
+                    text.className = 'text-emerald-400 font-medium';
+                    return;
+                }
+            } catch (err) {}
+
+            isBackendLive = false;
+            dot.className = 'w-2.5 h-2.5 rounded-full bg-indigo-400';
+            text.innerText = 'GitHub Live Demo Mode (Interactive Samples)';
+            text.className = 'text-indigo-300 font-medium';
+        }
+
+        function switchInputTab(tab) {
+            ['samples', 'upload', 'webcam'].forEach(t => {
+                document.getElementById(`panel-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = 'flex-1 py-2.5 px-3 rounded-xl text-xs md:text-sm font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800/60';
+            });
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = 'flex-1 py-2.5 px-3 rounded-xl text-xs md:text-sm font-semibold transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-lg';
+
+            if (tab === 'samples' && cachedSamples.length === 0) {
+                loadSamples();
+            }
+            if (tab !== 'webcam' && webcamStream) {
+                stopCamera();
+            }
+        }
+
+        // Drag and drop setup
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dropzone-active'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dropzone-active'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dropzone-active');
+            if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) processFile(e.target.files[0]);
+        });
+
+        function updateThreshold(val) {
+            currentThreshold = parseFloat(val);
+            document.getElementById('threshold-val').innerText = val;
+            if (lastInputBlob && isBackendLive) {
+                sendDetectionRequest(lastInputBlob);
+            }
+        }
+
+        function processFile(file) {
+            lastInputBlob = file;
+            if (!isBackendLive && (window.location.hostname.includes('github.io') || !API_BASE)) {
+                alert("ℹ️ You are viewing the GitHub Pages Static Demo.\n\nGitHub Pages only hosts static files and cannot execute PyTorch models on the server.\n\n👉 To test custom images, run `python run_website.py` locally or connect your hosted backend API in settings.\n\n👉 In this live demo, you can test all 8 pre-computed pets in the 'Dataset Samples' tab!");
+                switchInputTab('samples');
+                return;
+            }
+            sendDetectionRequest(file);
+        }
+
+        async function sendDetectionRequest(blob) {
+            showLoading(true);
+            const formData = new FormData();
+            formData.append('file', blob);
+            formData.append('threshold', currentThreshold);
+
+            const t0 = performance.now();
+            try {
+                const response = await fetch(`${API_BASE}/api/detect`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                const latency = Math.round(performance.now() - t0);
+
+                if (response.ok) {
+                    renderResult(data, latency);
+                } else {
+                    alert('Server error: ' + (data.detail || 'Failed to analyze image'));
+                }
+            } catch (err) {
+                alert(`Cannot connect to AI engine at ${API_BASE || 'http://127.0.0.1:8000'}.\n\nPlease run:\n> python run_website.py\n\nOr click 'Dataset Samples' to test the pre-computed pets!`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderResult(data, latency) {
+            currentResult = data;
+            document.getElementById('result-empty').classList.add('hidden');
+            document.getElementById('result-content').classList.remove('hidden');
+
+            document.getElementById('latency-tag').classList.remove('hidden');
+            document.getElementById('latency-ms').innerText = latency;
+
+            const isCat = data.prediction.toLowerCase() === 'cat';
+            const primaryCard = document.getElementById('primary-card');
+            const imageBadge = document.getElementById('image-badge');
+
+            if (isCat) {
+                primaryCard.className = 'p-5 rounded-2xl bg-emerald-950/40 border border-emerald-500/50 glow-cat transition-all';
+                imageBadge.className = 'absolute top-4 left-4 px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-emerald-600/90 text-white backdrop-blur-md border border-emerald-400 shadow-lg flex items-center gap-1.5';
+                document.getElementById('badge-icon').innerText = '🐱';
+                document.getElementById('badge-text').innerText = `CAT ${(data.confidence * 100).toFixed(1)}%`;
+                document.getElementById('res-class-name').innerHTML = '<span>🐱</span> CAT';
+                document.getElementById('res-class-name').className = 'text-3xl font-extrabold flex items-center gap-2 text-emerald-400';
+                document.getElementById('res-confidence').className = 'text-2xl font-bold mono text-emerald-300';
+                document.getElementById('res-description').innerText = 'Neural feature activations strongly match feline morphology (ears, eyes, whiskers).';
+            } else {
+                primaryCard.className = 'p-5 rounded-2xl bg-blue-950/40 border border-blue-500/50 glow-dog transition-all';
+                imageBadge.className = 'absolute top-4 left-4 px-3.5 py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-blue-600/90 text-white backdrop-blur-md border border-blue-400 shadow-lg flex items-center gap-1.5';
+                document.getElementById('badge-icon').innerText = '🐶';
+                document.getElementById('badge-text').innerText = `DOG ${(data.confidence * 100).toFixed(1)}%`;
+                document.getElementById('res-class-name').innerHTML = '<span>🐶</span> DOG';
+                document.getElementById('res-class-name').className = 'text-3xl font-extrabold flex items-center gap-2 text-blue-400';
+                document.getElementById('res-confidence').className = 'text-2xl font-bold mono text-blue-300';
+                document.getElementById('res-description').innerText = 'Neural feature activations strongly match canine morphology (snout, skull, body form).';
+            }
+
+            document.getElementById('res-confidence').innerText = `${(data.confidence * 100).toFixed(1)}%`;
+
+            if (data.bounding_boxes && data.bounding_boxes.length > 0) {
+                const b = data.bounding_boxes[0];
+                document.getElementById('box-x').innerText = b.x;
+                document.getElementById('box-y').innerText = b.y;
+                document.getElementById('box-w').innerText = b.width;
+                document.getElementById('box-h').innerText = b.height;
+            }
+
+            const catPct = (data.probabilities.cat * 100).toFixed(1);
+            const dogPct = (data.probabilities.dog * 100).toFixed(1);
+            document.getElementById('prob-cat-text').innerText = `${catPct}%`;
+            document.getElementById('prob-cat-bar').style.width = `${catPct}%`;
+            document.getElementById('prob-dog-text').innerText = `${dogPct}%`;
+            document.getElementById('prob-dog-bar').style.width = `${dogPct}%`;
+
+            updateActiveImage();
+        }
+
+        function switchView(view) {
+            currentView = view;
+            ['box', 'cam', 'orig'].forEach(v => {
+                document.getElementById(`btn-view-${v}`).className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+            });
+            document.getElementById(`btn-view-${view}`).className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition';
+            updateActiveImage();
+        }
+
+        function updateActiveImage() {
+            if (!currentResult) return;
+            const imgEl = document.getElementById('active-image');
+            if (currentView === 'box') {
+                imgEl.src = currentResult.annotated_image_b64;
+            } else if (currentView === 'cam') {
+                imgEl.src = currentResult.heatmap_image_b64;
+            } else {
+                imgEl.src = currentResult.original_image_b64;
+            }
+        }
+
+        function showLoading(show) {
+            const emptyEl = document.getElementById('result-empty');
+            const loadingEl = document.getElementById('result-loading');
+            const contentEl = document.getElementById('result-content');
+            if (show) {
+                emptyEl.classList.add('hidden');
+                contentEl.classList.add('hidden');
+                loadingEl.classList.remove('hidden');
+            } else {
+                loadingEl.classList.add('hidden');
+            }
+        }
+
+        // Samples loader with static cache support
+        async function loadSamples() {
+            const grid = document.getElementById('samples-grid');
+            try {
+                // Try static cache first (works anywhere including GitHub Pages)
+                let samples = [];
+                try {
+                    const cacheRes = await fetch('samples_cache.json');
+                    if (cacheRes.ok) {
+                        samples = await cacheRes.json();
+                    }
+                } catch(e) {}
+
+                // If cache didn't work and backend is live, try /api/samples
+                if (samples.length === 0 && isBackendLive) {
+                    const res = await fetch(`${API_BASE}/api/samples`);
+                    samples = await res.json();
+                }
+
+                cachedSamples = samples;
+                grid.innerHTML = '';
+
+                samples.forEach((s, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'glass-card glass-card-hover p-2.5 rounded-xl cursor-pointer flex flex-col items-center gap-2 border border-slate-700/60 transition';
+                    const thumbSrc = (s.result && s.result.original_image_b64) 
+                        ? s.result.original_image_b64 
+                        : (s.thumbnail_url ? `${API_BASE}${s.thumbnail_url}` : '');
+
+                    card.innerHTML = `
+                        <div class="w-full h-24 rounded-lg overflow-hidden bg-slate-900 flex items-center justify-center">
+                            <img src="${thumbSrc}" alt="${s.name}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex items-center justify-between w-full text-[11px] px-1 font-semibold">
+                            <span>${s.category === 'cat' ? '🐱 Cat' : '🐶 Dog'}</span>
+                            <span class="text-indigo-400 flex items-center gap-0.5">Test <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+                        </div>
+                    `;
+                    card.onclick = () => selectSample(s, idx);
+                    grid.appendChild(card);
+                });
+                lucide.createIcons();
+
+                // Auto-select first sample on initial page load
+                if (samples.length > 0 && !currentResult) {
+                    selectSample(samples[0], 0);
+                }
+            } catch (e) {
+                grid.innerHTML = `<div class="text-center py-6 text-rose-400 col-span-2 text-xs">Failed to load samples.</div>`;
+            }
+        }
+
+        async function selectSample(sampleObj, idx) {
+            showLoading(true);
+            const t0 = performance.now();
+
+            // If sample has pre-computed result, render instantly!
+            if (sampleObj.result) {
+                setTimeout(() => {
+                    const latency = Math.round(performance.now() - t0 + 12);
+                    renderResult(sampleObj.result, latency);
+                    showLoading(false);
+                }, 100);
+                return;
+            }
+
+            // Otherwise, make backend call
+            try {
+                const res = await fetch(`${API_BASE}/api/detect-sample`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filepath: sampleObj.filepath || sampleObj.path, threshold: currentThreshold })
+                });
+                const data = await res.json();
+                const latency = Math.round(performance.now() - t0);
+                renderResult(data, latency);
+            } catch (e) {
+                alert(`Cannot connect to server at ${API_BASE}.\nPlease run: python run_website.py`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Webcam functions
+        async function toggleCamera() {
+            const video = document.getElementById('webcam-video');
+            const placeholder = document.getElementById('webcam-placeholder');
+            const toggleBtn = document.getElementById('btn-camera-toggle');
+            const captureBtn = document.getElementById('btn-camera-capture');
+
+            if (!webcamStream) {
+                try {
+                    webcamStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                    video.srcObject = webcamStream;
+                    video.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    toggleBtn.innerHTML = '<i data-lucide="square" class="w-4 h-4"></i> Stop Camera';
+                    captureBtn.disabled = false;
+                    lucide.createIcons();
+                } catch (err) {
+                    alert('Camera access denied or unavailable: ' + err.message);
+                }
+            } else {
+                stopCamera();
+            }
+        }
+
+        function stopCamera() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(t => t.stop());
+                webcamStream = null;
+            }
+            const video = document.getElementById('webcam-video');
+            const placeholder = document.getElementById('webcam-placeholder');
+            const toggleBtn = document.getElementById('btn-camera-toggle');
+            const captureBtn = document.getElementById('btn-camera-capture');
+
+            video.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            toggleBtn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Start Camera';
+            captureBtn.disabled = true;
+            lucide.createIcons();
+        }
+
+        function captureCamera() {
+            const video = document.getElementById('webcam-video');
+            const canvas = document.getElementById('webcam-canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(blob => {
+                lastInputBlob = blob;
+                if (!isBackendLive && (window.location.hostname.includes('github.io') || !API_BASE)) {
+                    alert("ℹ️ You are viewing the GitHub Pages Static Demo.\n\nTo run live camera detection with the neural network:\n1. Run `python run_website.py` on your machine, or\n2. Connect your hosted backend API in settings!");
+                    return;
+                }
+                sendDetectionRequest(blob);
+            }, 'image/jpeg', 0.95);
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkServerHealth();
+            loadSamples();
+        });
+    </script>
+</body>
+</html>

@@ -47,11 +47,17 @@ def startup_event():
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    index_path = os.path.join("templates", "index.html")
+    index_path = "index.html" if os.path.exists("index.html") else os.path.join("templates", "index.html")
     if not os.path.exists(index_path):
         raise HTTPException(status_code=404, detail="Index template not found.")
     with open(index_path, "r", encoding="utf-8") as f:
         return f.read()
+
+@app.get("/samples_cache.json")
+async def serve_samples_cache():
+    if os.path.exists("samples_cache.json"):
+        return FileResponse("samples_cache.json")
+    raise HTTPException(status_code=404, detail="Cache not found")
 
 @app.post("/api/detect")
 async def detect_image(

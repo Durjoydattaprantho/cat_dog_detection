@@ -4,6 +4,23 @@ A comprehensive Deep Learning Computer Vision project for **Cat and Dog Detectio
 
 ---
 
+## 🌟 Live Demo on GitHub Pages
+
+Experience the interactive detection studio live in your browser:
+👉 **[https://durjoydattaprantho.github.io/cat_dog_detection/](https://durjoydattaprantho.github.io/cat_dog_detection/)**
+
+*Includes instant dataset testing for 8 pre-computed pets (bounding boxes, Grad-CAM attention heatmaps, and confidence telemetry), with support for custom live backends.*
+
+### ⚡ How to Enable GitHub Pages (1-Minute Setup):
+1. Open your repository on GitHub: [Durjoydattaprantho/cat_dog_detection](https://github.com/Durjoydattaprantho/cat_dog_detection)
+2. Go to **Settings** $\rightarrow$ **Pages** (in the left sidebar).
+3. Under **Build and deployment** $\rightarrow$ **Source**, choose **Deploy from a branch**.
+4. Set Branch to **`main`** and folder to **`/(root)`**, then click **Save**.
+5. Within 1-2 minutes, your live site will be accessible at:
+   `https://durjoydattaprantho.github.io/cat_dog_detection/`
+
+---
+
 ## 🚀 Two Full Web Application Experiences
 
 ### 🌐 Type 1: Modern Full-Stack AI Detection Studio (FastAPI + HTML5/Tailwind/JS)
